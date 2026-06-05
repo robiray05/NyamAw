@@ -86,7 +86,7 @@ export default function ManageReviews({ reviews = [] }) {
 
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-[#1E1E1E] mb-2">Kelola Ulasan Menu</h1>
-                <p className="text-gray-500">Pantau dan balas feedback pelanggan (seperti fitur Shopee).</p>
+                <p className="text-gray-500">Pantau dan balas feedback pelanggan.</p>
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

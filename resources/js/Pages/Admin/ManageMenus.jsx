@@ -10,7 +10,8 @@ export default function ManageMenus({ menus = [] }) {
     const [isEditing, setIsEditing] = useState(false);
     const [currentMenuId, setCurrentMenuId] = useState(null);
 
-    const { data, setData, post, processing, reset, clearErrors } = useForm({
+    // TAMBAHKAN 'errors' DI SINI UNTUK MENANGKAP ERROR VALIDASI
+    const { data, setData, post, processing, reset, clearErrors, errors } = useForm({
         name: '',
         description: '',
         price: '',
@@ -43,10 +44,12 @@ export default function ManageMenus({ menus = [] }) {
     const closeModal = () => {
         setIsModalOpen(false);
         reset();
+        clearErrors(); // Bersihkan error saat modal ditutup
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        
         if (isEditing) {
             router.post(`/admin/menus/${currentMenuId}`, {
                 _method: 'put',
@@ -59,6 +62,10 @@ export default function ManageMenus({ menus = [] }) {
                 onSuccess: () => {
                     closeModal();
                     Swal.fire('Berhasil!', 'Menu diperbarui.', 'success');
+                },
+                // TAMBAHKAN ONERROR UNTUK EDIT
+                onError: (err) => {
+                    Swal.fire('Gagal!', 'Periksa kembali form isian Anda.', 'error');
                 }
             });
         } else {
@@ -66,6 +73,11 @@ export default function ManageMenus({ menus = [] }) {
                 onSuccess: () => {
                     closeModal();
                     Swal.fire('Berhasil!', 'Menu ditambahkan.', 'success');
+                },
+                // TAMBAHKAN ONERROR UNTUK TAMBAH BARU
+                onError: (err) => {
+                    console.log("Error dari Backend:", err);
+                    Swal.fire('Gagal Menyimpan!', 'Ada isian yang salah atau kurang.', 'error');
                 }
             });
         }
@@ -126,7 +138,19 @@ export default function ManageMenus({ menus = [] }) {
                             {menus.length > 0 ? menus.map((menu) => (
                                 <tr key={menu.id} className="hover:bg-gray-50/50">
                                     <td className="p-5 flex items-center gap-4">
-                                        <img src={menu.image || '/images/food-hero.png'} alt={menu.name} className="w-12 h-12 rounded-lg object-cover" />
+                                        {/* KODE IMAGE ANTI-MELESET */}
+                                        <img 
+                                            // Cek otomatis: Kalau di database sudah ada kata 'storage', jangan ditambahin lagi biar nggak dobel
+                                            src={menu.image ? (menu.image.includes('storage') ? menu.image : `/storage/${menu.image}`) : '/images/food-hero.png'} 
+                                            alt={menu.name} 
+                                            className="w-12 h-12 rounded-lg object-cover bg-gray-100 shadow-sm" 
+                                            onError={(e) => {
+                                                // 1. Putuskan rantai infinite loop!
+                                                e.currentTarget.onerror = null; 
+                                                // 2. Kalau gambar memang benar-benar tidak ada/rusak, ganti ke gambar cadangan
+                                                e.currentTarget.src = '/images/food-hero.png'; 
+                                            }}
+                                        />
                                         <div>
                                             <p className="font-bold text-[#1E1E1E]">{menu.name}</p>
                                             <p className="text-xs text-gray-400 line-clamp-1 w-48">{menu.description}</p>
@@ -175,21 +199,23 @@ export default function ManageMenus({ menus = [] }) {
                                     <label className="block text-sm font-bold text-[#223322] mb-2">Nama Menu</label>
                                     <input 
                                         type="text"
-                                        className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-[#438240] focus:outline-none"
-                                        required
+                                        className={`w-full border rounded-xl p-3 focus:ring-2 focus:outline-none ${errors.name ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:ring-[#438240]'}`}
                                         value={data.name}
                                         onChange={e => setData('name', e.target.value)}
                                     />
+                                    {/* MUNCULKAN PESAN ERROR */}
+                                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                                 </div>
 
                                 <div className="mb-4">
                                     <label className="block text-sm font-bold text-[#223322] mb-2">Deskripsi</label>
                                     <textarea 
                                         rows="3"
-                                        className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-[#438240] focus:outline-none resize-none"
+                                        className={`w-full border rounded-xl p-3 focus:ring-2 focus:outline-none resize-none ${errors.description ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:ring-[#438240]'}`}
                                         value={data.description}
                                         onChange={e => setData('description', e.target.value)}
                                     ></textarea>
+                                    {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -197,21 +223,21 @@ export default function ManageMenus({ menus = [] }) {
                                         <label className="block text-sm font-bold text-[#223322] mb-2">Harga Jual (Rp)</label>
                                         <input 
                                             type="number"
-                                            className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-[#438240] focus:outline-none"
-                                            required
+                                            className={`w-full border rounded-xl p-3 focus:ring-2 focus:outline-none ${errors.price ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:ring-[#438240]'}`}
                                             value={data.price}
                                             onChange={e => setData('price', e.target.value)}
                                         />
+                                        {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-[#223322] mb-2">Harga Modal (Rp)</label>
                                         <input 
                                             type="number"
-                                            className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-[#438240] focus:outline-none"
-                                            required
+                                            className={`w-full border rounded-xl p-3 focus:ring-2 focus:outline-none ${errors.modal_price ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:ring-[#438240]'}`}
                                             value={data.modal_price}
                                             onChange={e => setData('modal_price', e.target.value)}
                                         />
+                                        {errors.modal_price && <p className="text-red-500 text-xs mt-1">{errors.modal_price}</p>}
                                     </div>
                                 </div>
 
@@ -225,6 +251,7 @@ export default function ManageMenus({ menus = [] }) {
                                             onChange={e => setData('image', e.target.files[0])}
                                         />
                                     </div>
+                                    {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image}</p>}
                                 </div>
 
                                 <button

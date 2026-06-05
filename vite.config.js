@@ -12,4 +12,9 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
+    server: {
+        fs: {
+            strict: false, // Mengizinkan Vite membaca folder symlink storage
+        },
+    },
 })

@@ -63,8 +63,7 @@ export default function Contact() {
                                 <div>
                                     <h4 className="font-bold text-[#223322] text-lg mb-1">Lokasi Kami</h4>
                                     <p className="text-[#597359] leading-relaxed">
-                                        Kantin Politeknik Caltex Riau,<br />
-                                        Rumbai, Pekanbaru.
+                                        Batam
                                     </p>
                                 </div>
                             </div>
@@ -75,7 +74,7 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-[#223322] text-lg mb-1">WhatsApp / Telepon</h4>
-                                    <p className="text-[#597359]">+62 812-3456-7890</p>
+                                    <p className="text-[#597359]">+62 853-5572-3330</p>
                                 </div>
                             </div>
 
@@ -85,7 +84,7 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-[#223322] text-lg mb-1">Email Layanan</h4>
-                                    <p className="text-[#597359]">support@nyamaw.com</p>
+                                    <p className="text-[#597359]">nyamaw@gmail.com</p>
                                 </div>
                             </div>
                         </div>
@@ -108,7 +107,7 @@ export default function Contact() {
                                     type="text" 
                                     required
                                     className="w-full bg-white border-none rounded-xl p-4 text-[#223322] focus:ring-2 focus:ring-[#438240] transition-all shadow-sm"
-                                    placeholder="Contoh: Budi Mahasiswa"
+                                    placeholder="Contoh: Aurora Ardhana"
                                     value={data.name}
                                     onChange={e => setData('name', e.target.value)}
                                 />
@@ -120,7 +119,7 @@ export default function Contact() {
                                     type="email" 
                                     required
                                     className="w-full bg-white border-none rounded-xl p-4 text-[#223322] focus:ring-2 focus:ring-[#438240] transition-all shadow-sm"
-                                    placeholder="budi@student.pcr.ac.id"
+                                    placeholder="Contoh : nyamaw@google.com"
                                     value={data.email}
                                     onChange={e => setData('email', e.target.value)}
                                 />
