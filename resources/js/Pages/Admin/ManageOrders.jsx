@@ -32,9 +32,7 @@ export default function ManageOrders({ orders }) {
     const getStatusColor = (status) => {
         switch(status) {
             case 'menunggu_pembayaran': return 'bg-red-100 text-red-600';
-            case 'diproses': return 'bg-blue-100 text-blue-600';
-            case 'sedang_dimasak': return 'bg-[#FFB627]/20 text-[#FFB627]';
-            case 'siap_diambil': return 'bg-[#2EC4B6]/20 text-[#2EC4B6]';
+            case 'diproses': return 'bg-[#FFB627]/20 text-[#FFB627]';
             case 'selesai': return 'bg-green-100 text-green-600';
             default: return 'bg-gray-100 text-gray-600';
         }
@@ -90,12 +88,11 @@ export default function ManageOrders({ orders }) {
                                         <select 
                                             value={order.status}
                                             onChange={(e) => handleStatusChange(order.id, 'status', e.target.value)}
-                                            className={`text-xs font-bold rounded-lg px-2 py-1 outline-none ${getStatusColor(order.status)}`}
+                                            className={`text-xs font-bold rounded-lg px-2 py-1 outline-none border-0 ring-1 ring-inset ring-gray-200 focus:ring-2 focus:ring-[#FF6B35] ${getStatusColor(order.status)}`}
                                         >
+                                            {/* OPSI YANG SUDAH DIPANGKAS MENJADI 3 SAJA */}
                                             <option value="menunggu_pembayaran">Menunggu Pembayaran</option>
                                             <option value="diproses">Diproses</option>
-                                            <option value="sedang_dimasak">Sedang Dimasak</option>
-                                            <option value="siap_diambil">Siap Diambil</option>
                                             <option value="selesai">Selesai</option>
                                         </select>
                                     </td>
@@ -120,7 +117,7 @@ export default function ManageOrders({ orders }) {
                 </div>
             </div>
 
-            {/* Modal Detail Pesanan */}
+            {/* Modal Detail Pesanan (Sama seperti sebelumnya) */}
             {selectedOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative flex flex-col max-h-[90vh]">
@@ -140,7 +137,6 @@ export default function ManageOrders({ orders }) {
                         </div>
                         
                         <div className="p-6 overflow-y-auto flex-1 space-y-6">
-                            {/* Info Pelanggan */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Informasi Pelanggan</h4>
                                 <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
@@ -150,7 +146,6 @@ export default function ManageOrders({ orders }) {
                                 </div>
                             </div>
 
-                            {/* Daftar Makanan */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Daftar Menu</h4>
                                 <div className="space-y-3">
