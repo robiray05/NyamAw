@@ -2,35 +2,29 @@ import MainLayout from '@/Layouts/MainLayout';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import MenuCard from '@/Components/MenuCard';
-import { X, ShoppingCart, QrCode } from 'lucide-react';
+import { X, ShoppingCart, Phone, ArrowRight, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export default function Menu({ menus }) {
-    // Pengaman: Beri nilai default {} jika flash atau auth belum ada
     const { auth = {}, flash = {} } = usePage().props;
     const user = auth?.user; 
 
     const [cart, setCart] = useState([]);
     const [selectedMenu, setSelectedMenu] = useState(null);
+    
+    // State Modal
     const [showCartModal, setShowCartModal] = useState(false);
-    const [showQrisModal, setShowQrisModal] = useState(false);
+    const [showWaModal, setShowWaModal] = useState(false);
+    
+    // State Form & Loading
+    const [whatsappNumber, setWhatsappNumber] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
     
     const [customOptions, setCustomOptions] = useState({ pedas: 0, tambahAyam: false, tambahTelur: false });
     const [qty, setQty] = useState(1);
-    const [isProcessing, setIsProcessing] = useState(false);
 
-    // 🔥 JURUS AMPUH: Deteksi otomatis format data dari Laravel (Array biasa atau Pagination)
     const displayMenus = Array.isArray(menus) ? menus : (menus?.data || []);
-    
     const cartTotal = cart.reduce((sum, item) => sum + item.itemTotal, 0);
-
-    useEffect(() => {
-        if (flash?.success && flash?.qris_reference) {
-            setShowCartModal(false);
-            setCart([]);
-            setShowQrisModal(true);
-        }
-    }, [flash]);
 
     const openModal = (menu) => {
         setSelectedMenu(menu);
@@ -57,18 +51,57 @@ export default function Menu({ menus }) {
         });
     };
 
-    const handleCheckout = () => {
+    // 1. Fungsi saat tombol Checkout di keranjang diklik
+    const handleCartCheckoutClick = () => {
         if (!user) {
             Swal.fire('Akses Ditolak', 'Silakan login terlebih dahulu menggunakan email institusi untuk memesan.', 'warning');
             return;
         }
+        // Tutup keranjang, buka modal WA
+        setShowCartModal(false);
+        setShowWaModal(true);
+    };
+
+    // 2. Fungsi saat tombol "Bayar Sekarang" di Modal WA diklik
+    const processPayment = (e) => {
+        e.preventDefault();
+        
+        if (!whatsappNumber.startsWith('08') && !whatsappNumber.startsWith('62')) {
+            Swal.fire('Format Salah', 'Nomor WhatsApp harus diawali dengan 08 atau 62', 'error');
+            return;
+        }
 
         setIsProcessing(true);
-        router.post('/checkout', {
-            cart: cart,
-            total_price: cartTotal
+
+        // Merakit data keranjang agar sesuai dengan database Nyam.Aw
+        const formattedItems = cart.map(item => {
+            let notes = `Lv.${item.customOptions.pedas}`;
+            if (item.customOptions.tambahAyam) notes += ', +Ayam';
+            if (item.customOptions.tambahTelur) notes += ', +Telur';
+            
+            return {
+                menu_id: item.id,
+                quantity: item.qty,
+                subtotal: item.itemTotal,
+                custom_notes: notes
+            };
+        });
+
+        // Tembak ke backend OrderController@store
+        router.post(route('orders.store'), {
+            whatsapp_number: whatsappNumber,
+            total_price: cartTotal,
+            items: formattedItems
         }, {
-            onFinish: () => setIsProcessing(false)
+            onSuccess: () => {
+                setIsProcessing(false);
+                setShowWaModal(false);
+                setCart([]); // Kosongkan keranjang jika sukses
+            },
+            onError: (errors) => {
+                setIsProcessing(false);
+                Swal.fire('Gagal', errors.whatsapp_number || 'Terjadi kesalahan pada sistem DOKU.', 'error');
+            }
         });
     };
 
@@ -104,7 +137,7 @@ export default function Menu({ menus }) {
                 </div>
             </div>
 
-            {/* Modal Tambah ke Keranjang */}
+            {/* Modal Tambah ke Keranjang (Tetap Sama) */}
             {selectedMenu && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
                     <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
@@ -180,11 +213,11 @@ export default function Menu({ menus }) {
                                     <span className="text-xl font-bold text-[#FF6B35]">Rp {cartTotal.toLocaleString('id-ID')}</span>
                                 </div>
                                 <button 
-                                    onClick={handleCheckout} 
-                                    disabled={isProcessing}
-                                    className="w-full bg-[#1E1E1E] text-white py-3.5 rounded-xl font-bold hover:bg-[#FF6B35] transition-all disabled:opacity-70 flex justify-center items-center gap-2"
+                                    onClick={handleCartCheckoutClick} 
+                                    className="w-full bg-[#1E1E1E] text-white py-3.5 rounded-xl font-bold hover:bg-[#FF6B35] transition-all flex justify-center items-center gap-2 shadow-lg"
                                 >
-                                    {isProcessing ? 'Memproses...' : 'Checkout Sekarang'}
+                                    Lanjutkan ke Pembayaran
+                                    <ArrowRight size={18} />
                                 </button>
                             </>
                         )}
@@ -192,37 +225,71 @@ export default function Menu({ menus }) {
                 </div>
             )}
 
-            {/* Modal Simulasi QRIS */}
-            {showQrisModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-8 text-center relative">
-                        <button onClick={() => setShowQrisModal(false)} className="absolute top-4 right-4 p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors">
-                            <X size={20} />
-                        </button>
-                        <div className="w-16 h-16 bg-[#2EC4B6]/10 text-[#2EC4B6] rounded-full flex items-center justify-center mx-auto mb-4">
-                            <QrCode size={32} />
-                        </div>
-                        <h3 className="text-2xl font-bold font-heading mb-2 text-[#1E1E1E]">Scan QRIS</h3>
-                        <p className="text-gray-500 text-sm mb-6">Selesaikan pembayaran untuk pesanan <br/><span className="font-bold text-[#1E1E1E]">{flash?.qris_reference}</span></p>
-                        
-                        <div className="bg-gray-100 w-48 h-48 mx-auto rounded-xl flex items-center justify-center mb-6 border-2 border-dashed border-gray-300">
-                            <span className="text-gray-400 font-bold text-sm">SIMULASI QR CODE</span>
-                        </div>
-                        
-                        <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                            <p className="text-xs text-gray-500 mb-1">Total Tagihan</p>
-                            <p className="text-2xl font-bold text-[#FF6B35]">Rp {flash?.total_price?.toLocaleString('id-ID')}</p>
-                        </div>
+            {/* MODAL BARU: INPUT WHATSAPP SEBELUM QRIS */}
+            {showWaModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 relative border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
                         
                         <button 
-                            onClick={() => {
-                                setShowQrisModal(false);
-                                Swal.fire('Terkonfirmasi', 'Admin akan memverifikasi pembayaran Anda.', 'success');
-                            }} 
-                            className="w-full bg-[#2EC4B6] text-white py-3.5 rounded-xl font-bold hover:bg-teal-500 transition-all shadow-lg shadow-teal-500/30"
+                            onClick={() => !isProcessing && setShowWaModal(false)} 
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1.5 rounded-full bg-gray-50"
+                            disabled={isProcessing}
                         >
-                            Saya Sudah Bayar
+                            <X size={18} />
                         </button>
+
+                        <div className="text-center mb-6 mt-2">
+                            <div className="bg-green-100 text-green-600 p-3 rounded-2xl w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                                <Phone size={24} />
+                            </div>
+                            <h3 className="font-bold text-xl text-[#1E1E1E]">Notifikasi WhatsApp</h3>
+                            <p className="text-sm text-gray-500 mt-1 px-4">
+                                Masukkan nomor WA aktifmu untuk menerima info live status & struk pesanan Nyam.Aw.
+                            </p>
+                        </div>
+
+                        <form onSubmit={processPayment} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nomor WhatsApp</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400 font-bold text-sm">+62</span>
+                                    <input 
+                                        type="tel" 
+                                        required
+                                        disabled={isProcessing}
+                                        placeholder="8123456789"
+                                        value={whatsappNumber.replace(/^(62|0)/, '')}
+                                        onChange={(e) => setWhatsappNumber('0' + e.target.value.replace(/\D/g, ''))}
+                                        className="w-full pl-14 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent outline-none transition-all disabled:opacity-60"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-2xl p-4 flex justify-between items-center border border-gray-100">
+                                <span className="text-sm font-bold text-gray-500">Total Bayar</span>
+                                <span className="text-xl font-black text-[#FF6B35]">
+                                    Rp {cartTotal.toLocaleString('id-ID')}
+                                </span>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isProcessing}
+                                className="w-full bg-[#1E1E1E] text-white font-bold py-4 rounded-2xl hover:bg-black transition-all flex items-center justify-center gap-2 shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={20} />
+                                        Membuat QRIS...
+                                    </>
+                                ) : (
+                                    <>
+                                        Bayar Sekarang
+                                        <ArrowRight size={18} />
+                                    </>
+                                )}
+                            </button>
+                        </form>
                     </div>
                 </div>
             )}

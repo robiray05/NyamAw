@@ -10,7 +10,6 @@ export default function ManageOrders({ orders }) {
     const handleStatusChange = (orderId, field, value) => {
         router.put(route('admin.orders.update_status', orderId), {
             [field]: value,
-            // Kita perlu mengirim kedua field karena validasi controller membutuhkan keduanya
             status: field === 'status' ? value : orders.find(o => o.id === orderId).status,
             payment_status: field === 'payment_status' ? value : orders.find(o => o.id === orderId).payment_status
         }, {
@@ -29,11 +28,14 @@ export default function ManageOrders({ orders }) {
         });
     };
 
+    // WARNA STATUS SUDAH DIPERBARUI
     const getStatusColor = (status) => {
         switch(status) {
             case 'menunggu_pembayaran': return 'bg-red-100 text-red-600';
+            case 'pembayaran_berhasil': return 'bg-blue-100 text-blue-600';
             case 'diproses': return 'bg-[#FFB627]/20 text-[#FFB627]';
             case 'selesai': return 'bg-green-100 text-green-600';
+            case 'dibatalkan': return 'bg-gray-200 text-gray-700';
             default: return 'bg-gray-100 text-gray-600';
         }
     };
@@ -55,7 +57,7 @@ export default function ManageOrders({ orders }) {
                                 <th className="p-4 font-semibold">ID Pesanan</th>
                                 <th className="p-4 font-semibold">Pelanggan</th>
                                 <th className="p-4 font-semibold">Total Harga</th>
-                                <th className="p-4 font-semibold">Pembayaran (QRIS)</th>
+                                <th className="p-4 font-semibold">Pembayaran</th>
                                 <th className="p-4 font-semibold">Status Dapur</th>
                                 <th className="p-4 font-semibold text-center">Aksi</th>
                             </tr>
@@ -90,10 +92,12 @@ export default function ManageOrders({ orders }) {
                                             onChange={(e) => handleStatusChange(order.id, 'status', e.target.value)}
                                             className={`text-xs font-bold rounded-lg px-2 py-1 outline-none border-0 ring-1 ring-inset ring-gray-200 focus:ring-2 focus:ring-[#FF6B35] ${getStatusColor(order.status)}`}
                                         >
-                                            {/* OPSI YANG SUDAH DIPANGKAS MENJADI 3 SAJA */}
+                                            {/* OPSI STATUS SUDAH LENGKAP MENGIKUTI DATABASE */}
                                             <option value="menunggu_pembayaran">Menunggu Pembayaran</option>
+                                            <option value="pembayaran_berhasil">Pembayaran Berhasil</option>
                                             <option value="diproses">Diproses</option>
                                             <option value="selesai">Selesai</option>
+                                            <option value="dibatalkan">Dibatalkan</option>
                                         </select>
                                     </td>
                                     <td className="p-4 text-center">
@@ -117,7 +121,7 @@ export default function ManageOrders({ orders }) {
                 </div>
             </div>
 
-            {/* Modal Detail Pesanan (Sama seperti sebelumnya) */}
+            {/* Modal Detail Pesanan */}
             {selectedOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative flex flex-col max-h-[90vh]">
@@ -142,6 +146,9 @@ export default function ManageOrders({ orders }) {
                                 <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                                     <p className="font-bold text-[#1E1E1E]">{selectedOrder.user.name}</p>
                                     <p className="text-sm text-gray-500">{selectedOrder.user.email}</p>
+                                    <p className="text-sm font-bold text-[#438240] mt-1">
+                                        📞 WA: {selectedOrder.whatsapp_number ? selectedOrder.whatsapp_number : '-'}
+                                    </p>
                                     <p className="text-xs text-gray-400 mt-2">Dipesan pada: {new Date(selectedOrder.created_at).toLocaleString('id-ID')}</p>
                                 </div>
                             </div>

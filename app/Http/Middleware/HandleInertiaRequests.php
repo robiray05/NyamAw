@@ -35,7 +35,7 @@ class HandleInertiaRequests extends Middleware
             ],
             // TAMBAHKAN KODE INI UNTUK MENGIRIM ANGKA NOTIFIKASI ADMIN
             'pending_orders_count' => $request->user() && $request->user()->role === 'admin'
-                ? \App\Models\Order::whereIn('status', ['menunggu_pembayaran', 'dimasak'])->count()
+                ? \App\Models\Order::whereIn('status', ['pembayaran_berhasil', 'diproses'])->count()
                 : 0,
 
             'pending_complaints_count' => $request->user() && $request->user()->role === 'admin'

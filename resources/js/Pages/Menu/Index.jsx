@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, StarHalf, ShoppingBag, Plus, X, Flame, Egg, Drumstick, ShoppingCart, Trash2 } from 'lucide-react';
+import { Star, StarHalf, ShoppingBag, Plus, X, Flame, Egg, Drumstick, ShoppingCart, Trash2, Phone, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function Index({ menus = [] }) {
     const [selectedMenu, setSelectedMenu] = useState(null);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [cart, setCart] = useState([]);
+    
+    // State Baru untuk Modal WA & Loading
+    const [showWaModal, setShowWaModal] = useState(false);
+    const [whatsappNumber, setWhatsappNumber] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
     const [qty, setQty] = useState(1);
@@ -69,23 +73,52 @@ export default function Index({ menus = [] }) {
 
     const cartTotal = cart.reduce((sum, item) => sum + item.itemTotal, 0);
 
-    const handleCheckout = () => {
+    // FUNGSI 1: Buka Modal WA saat Klik Checkout di Keranjang
+    const handleCartCheckoutClick = () => {
         if (cart.length === 0) return;
+        setIsCartOpen(false); // Tutup sidebar cart
+        setShowWaModal(true); // Buka modal WA
+    };
+
+    // FUNGSI 2: Kirim data asli ke Laravel (Database Nyam.Aw)
+    const processPayment = (e) => {
+        e.preventDefault();
         
+        if (!whatsappNumber.startsWith('08') && !whatsappNumber.startsWith('62')) {
+            alert('Format Salah: Nomor WhatsApp harus diawali dengan 08 atau 62');
+            return;
+        }
+
         setIsProcessing(true);
-        router.post('/checkout', {
-            cart: cart,
-            total_price: cartTotal
+
+        // Ubah format keranjang menjadi format yang dikenali database
+        const formattedItems = cart.map(item => {
+            let notes = `Lv.${item.customOptions.pedas}`;
+            if (item.customOptions.tambahAyam) notes += ', +Ayam';
+            if (item.customOptions.tambahTelur) notes += ', +Telur';
+            
+            return {
+                menu_id: item.id,
+                quantity: item.qty,
+                subtotal: item.itemTotal,
+                custom_notes: notes
+            };
+        });
+
+        // TEMBAK JALUR ANTI-BENTROK YANG SUDAH KITA BUAT
+        router.post('/checkout/proses-nyamaw', {
+            whatsapp_number: whatsappNumber,
+            total_price: cartTotal,
+            items: formattedItems
         }, {
             onSuccess: () => {
-                setCart([]);
-                setIsCartOpen(false);
                 setIsProcessing(false);
-                alert("Pesanan berhasil dibuat! Silakan bayar dan cek riwayat pesanan.");
+                setShowWaModal(false);
+                setCart([]); // Kosongkan keranjang
             },
-            onError: () => {
+            onError: (errors) => {
                 setIsProcessing(false);
-                alert("Gagal membuat pesanan, silakan coba lagi.");
+                alert(errors.whatsapp_number || "Gagal membuat pesanan QRIS, coba muat ulang halaman.");
             }
         });
     };
@@ -99,7 +132,6 @@ export default function Index({ menus = [] }) {
         for (let i = 0; i < fullStars; i++) {
             stars.push(<Star key={`full-${i}`} size={16} fill="currentColor" className="text-[#F4A236]" />);
         }
-        
         if (hasHalfStar) {
             stars.push(
                 <div key="half" className="relative w-4 h-4 inline-block">
@@ -108,11 +140,9 @@ export default function Index({ menus = [] }) {
                 </div>
             );
         }
-        
         for (let i = 0; i < emptyStars; i++) {
             stars.push(<Star key={`empty-${i}`} size={16} className="text-gray-200" />);
         }
-        
         return stars;
     };
 
@@ -173,7 +203,6 @@ export default function Index({ menus = [] }) {
                                             <div className="flex items-center text-[#F4A236] gap-0.5">
                                                 {renderStars(Number(item.avg_rating || 0))}
                                             </div>
-                                            {/* PERBAIKAN: Menggunakan .toFixed(1) agar hanya 1 angka di belakang koma */}
                                             <span className="text-xs font-bold text-[#597359]">
                                                 {item.avg_rating > 0 ? `${Number(item.avg_rating).toFixed(1)} (${item.total_reviews})` : 'Baru'}
                                             </span>
@@ -325,7 +354,7 @@ export default function Index({ menus = [] }) {
                 )}
             </AnimatePresence>
 
-            {/* SIDEBAR CART / CHECKOUT MODAL */}
+            {/* SIDEBAR CART */}
             <AnimatePresence>
                 {isCartOpen && (
                     <div className="fixed inset-0 z-[70] flex justify-end bg-[#223322]/40 backdrop-blur-sm">
@@ -369,17 +398,85 @@ export default function Index({ menus = [] }) {
                                     <span className="text-2xl font-extrabold text-[#223322]">{formatRupiah(cartTotal)}</span>
                                 </div>
                                 <button 
-                                    onClick={handleCheckout}
-                                    disabled={isProcessing}
-                                    className="w-full bg-[#438240] text-white py-4 rounded-full font-bold hover:bg-[#366B33] disabled:opacity-50 transition-all shadow-lg flex justify-center items-center gap-2"
+                                    onClick={handleCartCheckoutClick} // <-- DIGANTI MEMANGGIL MODAL WA
+                                    className="w-full bg-[#438240] text-white py-4 rounded-full font-bold hover:bg-[#366B33] transition-all shadow-lg flex justify-center items-center gap-2"
                                 >
-                                    {isProcessing ? 'Memproses...' : 'Checkout Pesanan'}
+                                    Lanjutkan ke Pembayaran <ArrowRight size={18} />
                                 </button>
                             </div>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* MODAL INPUT WHATSAPP SAKTI */}
+            {showWaModal && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 relative border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+                        
+                        <button 
+                            onClick={() => !isProcessing && setShowWaModal(false)} 
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1.5 rounded-full bg-gray-50"
+                            disabled={isProcessing}
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <div className="text-center mb-6 mt-2">
+                            <div className="bg-[#438240]/10 text-[#438240] p-3 rounded-2xl w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                                <Phone size={24} />
+                            </div>
+                            <h3 className="font-bold text-xl text-[#223322]">Notifikasi WhatsApp</h3>
+                            <p className="text-sm text-gray-500 mt-1 px-4">
+                                Masukkan nomor WA aktifmu untuk menerima info live status pesanan Nyam.Aw.
+                            </p>
+                        </div>
+
+                        <form onSubmit={processPayment} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nomor WhatsApp</label>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400 font-bold text-sm">+62</span>
+                                    <input 
+                                        type="tel" 
+                                        required
+                                        disabled={isProcessing}
+                                        placeholder="8123456789"
+                                        value={whatsappNumber.replace(/^(62|0)/, '')} 
+                                        onChange={(e) => setWhatsappNumber('0' + e.target.value.replace(/\D/g, ''))}
+                                        className="w-full pl-14 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-[#438240] focus:border-transparent outline-none transition-all disabled:opacity-60"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-2xl p-4 flex justify-between items-center border border-gray-100">
+                                <span className="text-sm font-bold text-gray-500">Total Bayar</span>
+                                <span className="text-xl font-black text-[#438240]">
+                                    {formatRupiah(cartTotal)}
+                                </span>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isProcessing}
+                                className="w-full bg-[#223322] text-white font-bold py-4 rounded-full hover:bg-black transition-all flex items-center justify-center gap-2 shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={20} />
+                                        Membuat QRIS...
+                                    </>
+                                ) : (
+                                    <>
+                                        Bayar Sekarang
+                                        <ArrowRight size={18} />
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
 
         </MainLayout>
     );
