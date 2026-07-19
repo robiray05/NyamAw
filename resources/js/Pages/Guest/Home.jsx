@@ -4,7 +4,6 @@ import { Head, Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Heart, Leaf } from 'lucide-react';
 
-// INI DIA REACT LAZY NYA!
 const FeaturesSection = React.lazy(() => import('@/Components/FeaturesSection'));
 
 export default function Home() {
@@ -69,7 +68,6 @@ export default function Home() {
                 </motion.div>
             </section>
 
-            {/* INI DIA REACT SUSPENSE NYA! */}
             <Suspense fallback={<div className="text-center py-20 text-[#438240] font-bold animate-pulse">Memuat Fitur Nyam.Aw...</div>}>
                 <FeaturesSection />
             </Suspense>

@@ -33,7 +33,6 @@ Route::get('/contact', function () {
     return Inertia::render('Guest/Contact');
 })->name('contact');
 
-// TARUH DI LUAR GRUP MIDDLEWARE AUTH (RUTE PUBLIK)
 Route::post('/doku/webhook', [OrderController::class, 'webhook'])->name('doku.webhook');
 
 // RUTE USER (Harus login)
@@ -46,7 +45,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/riwayat-pesanan', [OrderController::class, 'history'])->name('orders.history');
     Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
 
-    // INI DIA JALUR QRIS BARU KITA
     Route::post('/checkout/proses-nyamaw', [OrderController::class, 'store'])->name('orders.store');
     Route::get('/checkout/{order}/bayar-qris', [OrderController::class, 'pay'])->name('orders.pay');
 });

@@ -19,19 +19,28 @@ export default function Index({ complaints = [] }) {
         setReplyText('');
     };
 
-    const handleResolve = () => {
+    const handleResolve = (e) => {
+        e.preventDefault(); // 1. Mencegah layar reload paksa
+
         if (!replyText.trim()) return;
-        
+
         setIsProcessing(true);
         router.put(`/admin/complaints/${selectedComplaint.id}/status`, {
-            admin_reply: replyText
+            admin_reply: replyText,
+            status: 'selesai' // 2. Pastikan mengirim status selesai
         }, {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
                 closeReplyModal();
                 setIsProcessing(false);
                 alert("Balasan terkirim! Komplain telah diselesaikan.");
             },
-            onError: () => setIsProcessing(false)
+            onError: (errors) => {
+                setIsProcessing(false);
+                console.error("Error dari Laravel:", errors);
+                alert("Gagal mengirim! Silakan cek tulisan merah di Console.");
+            }
         });
     };
 
@@ -61,7 +70,6 @@ export default function Index({ complaints = [] }) {
                                 {complaints.map((comp) => (
                                     <tr key={comp.id} className="hover:bg-gray-50/50">
                                         <td className="p-5 font-bold">{comp.user?.name}</td>
-                                        {/* Perbaikan bug "Menu Terhapus" dengan mengambil menu dari items[0] */}
                                         <td className="p-5 text-[#FF6B35] font-semibold">
                                             {comp.order?.items?.[0]?.menu?.name || 'Pesanan Nyam.Aw'}
                                         </td>
@@ -130,6 +138,7 @@ export default function Index({ complaints = [] }) {
                             ></textarea>
 
                             <button
+                                type="button"
                                 onClick={handleResolve}
                                 disabled={isProcessing || !replyText.trim()}
                                 className="w-full bg-[#FF6B35] text-white py-3 rounded-xl font-bold hover:bg-[#e85b29] disabled:opacity-50 flex justify-center items-center gap-2"

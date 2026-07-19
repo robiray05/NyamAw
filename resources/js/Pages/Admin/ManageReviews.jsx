@@ -62,7 +62,7 @@ export default function ManageReviews({ reviews = [] }) {
             },
             onError: (errors) => {
                 console.error("Error server:", errors);
-                Swal.fire('Gagal', 'Terjadi kesalahan saat membalas. Cek console.', 'error');
+                Swal.fire('Gagal', 'Balasan terlalu singkat. Mohon tuliskan balasan yang lebih lengkap.', 'error');
             },
             onFinish: () => {
                 // Baris ini MENJAMIN tombol kembali normal (tidak nyangkut "Menyimpan...")
